@@ -21,6 +21,13 @@ import androidx.media.app.NotificationCompat.MediaStyle
 import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 
 class AudioService : Service() {
     private var mediaPlayer: MediaPlayer? = null
@@ -28,6 +35,9 @@ class AudioService : Service() {
     private lateinit var mediaSession: MediaSessionCompat
     private lateinit var audioManager: AudioManager
     private var audioFocusRequest: AudioFocusRequest? = null
+    private val channel = "com.example.tp_mobile/audio"
+    private val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private val notificationId = 1
 
     companion object {
         const val NOTIFICATION_ID = 1
@@ -434,17 +444,13 @@ class AudioService : Service() {
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
-                CHANNEL_ID,
-                "Audio Service Channel",
+                "music_player_channel",
+                "Music Player",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Channel for Audio Player"
-                setShowBadge(false)
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                description = "Music Player Channel"
             }
-
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(serviceChannel)
+            notificationManager.createNotificationChannel(serviceChannel)
 
             Log.d("AudioService", "Notification channel created")
         }
@@ -496,14 +502,14 @@ class AudioService : Service() {
             .setShowActionsInCompactView(0, 1, 2) // Previous, Play/Pause, Next
 
         // Build the notification
-        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, "music_player_channel")
             .setContentTitle("Your Audio Title")
             .setContentText("Artist Name")
             .setSubText("Album Name")
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setContentIntent(contentIntent)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setStyle(mediaStyle)
             .setShowWhen(false)
 
@@ -544,8 +550,49 @@ class AudioService : Service() {
 
         stopSelf()
 
-
-
         super.onDestroy()
+    }
+
+    fun playAudio(title: String, artist: String, imagePath: String) {
+        isPlaying = true
+        updateNotification(title, artist, imagePath, isPlaying)
+    }
+
+    fun updateNotification(title: String, artist: String, imagePath: String, isPlaying: Boolean) {
+        this.isPlaying = isPlaying
+
+        val intent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(this, "music_player_channel")
+            .setContentTitle(title)
+            .setContentText(artist)
+            .setSmallIcon(android.R.drawable.ic_media_play)
+            .setLargeIcon(BitmapFactory.decodeResource(resources, android.R.drawable.ic_media_play))
+            .setContentIntent(pendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .addAction(
+                android.R.drawable.ic_media_play,
+                if (isPlaying) "Pause" else "Play",
+                PendingIntent.getBroadcast(
+                    this,
+                    0,
+                    Intent(if (isPlaying) "PAUSE" else "PLAY"),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+            )
+            .build()
+
+        notificationManager.notify(notificationId, notification)
+    }
+
+    fun stopNotification() {
+        notificationManager.cancel(notificationId)
     }
 }

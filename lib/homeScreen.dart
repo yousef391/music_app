@@ -57,7 +57,7 @@ final List<Song> dummySongs = [
     id: '1',
     title: 'Bohemian Rhapsody',
     description: 'A six-minute suite by the British rock band Queen, written by Freddie Mercury. It\'s a rock opera song and has no chorus but consists of several sections: an intro, a ballad segment, an operatic passage, a hard rock part and a reflective coda.',
-    audioPath: 'audio/test1.mp3',
+    audioPath: 'audio/test.mp3',
     imagePath: 'assets/images/img.jpg',
   ),
   Song(
@@ -194,17 +194,34 @@ final List<Song> dummySongs = [
       if (File(selectedSong!.audioPath!).existsSync()) {
         await _audioPlayer.play(DeviceFileSource(selectedSong!.audioPath!));
       } else {
-        // If file doesn't exist, play the test audio file
-        await _audioPlayer.play(AssetSource('audio/test1.mp3'));
+        // If file doesn't exist, try to play from assets
+        try {
+          await _audioPlayer.play(AssetSource(selectedSong!.audioPath!));
+        } catch (e) {
+          print('Error playing audio: $e');
+          // If asset doesn't exist, try the test audio file
+          await _audioPlayer.play(AssetSource('audio/test1.mp3'));
+        }
       }
     } else {
-      // If no audio path is specified, play the test audio file
-      await _audioPlayer.play(AssetSource('audio/test1.mp3'));
+      // If no audio path is specified, try to play from assets
+      try {
+        await _audioPlayer.play(AssetSource('audio/${selectedSong?.id}.mp3'));
+      } catch (e) {
+        print('Error playing audio: $e');
+        // If asset doesn't exist, play the test audio file
+        await _audioPlayer.play(AssetSource('audio/test1.mp3'));
+      }
     }
     _animationController.repeat();
     setState(() {
       isPaused = false;
     });
+    
+    // Update notification
+    if (selectedSong != null) {
+      await _audioService.playAudio(selectedSong!);
+    }
   }
 
   Future<void> _pauseMusic() async {
@@ -213,6 +230,9 @@ final List<Song> dummySongs = [
     setState(() {
       isPaused = true;
     });
+    
+    // Update notification
+    await _audioService.pauseAudio();
   }
   
   void _nextSong() {
@@ -408,26 +428,32 @@ final List<Song> dummySongs = [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                selectedSong?.title ?? 'Unknown Song',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  selectedSong?.title ?? 'Unknown Song',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                selectedSong?.artist ?? 'Unknown Artist',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
-                                  fontSize: 16,
+                                const SizedBox(height: 4),
+                                Text(
+                                  selectedSong?.artist ?? 'Unknown Artist',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                    fontSize: 16,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                           IconButton(
                             icon: Icon(

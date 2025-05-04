@@ -275,8 +275,8 @@ class SongDetailView extends StatelessWidget {
             child: Hero(
               tag: 'song_image_${song.id}',
               child: Container(
-                width: 200,
-                height: 200,
+                width: MediaQuery.of(context).size.width * 0.6,
+                height: MediaQuery.of(context).size.width * 0.6,
                 margin: const EdgeInsets.only(bottom: 24),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -303,6 +303,8 @@ class SongDetailView extends StatelessWidget {
               fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           
           // Artist name
@@ -314,6 +316,8 @@ class SongDetailView extends StatelessWidget {
                 fontSize: 18,
                 color: Theme.of(context).colorScheme.primary,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           
@@ -335,6 +339,8 @@ class SongDetailView extends StatelessWidget {
               fontSize: 16,
               height: 1.5,
             ),
+            maxLines: 10,
+            overflow: TextOverflow.ellipsis,
           ),
           
           const SizedBox(height: 32),
@@ -458,6 +464,8 @@ class SongsList extends StatelessWidget {
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
@@ -466,6 +474,8 @@ class SongsList extends StatelessWidget {
                                       fontSize: 14,
                                       color: Theme.of(context).colorScheme.primary,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
